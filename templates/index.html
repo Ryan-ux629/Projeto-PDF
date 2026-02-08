@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor do Ryan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00ff88',
+                        secondary: '#1e1e1e',
+                        dark: '#121212',
+                        hover: '#00cc6a'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .drop-zone {
+            border: 2px dashed #444;
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #00ff88;
+            background-color: rgba(0, 255, 136, 0.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl text-center mb-8">
+        <h1 class="text-4xl font-bold text-primary mb-2">Ferramentas do Ryan</h1>
+        <p class="text-gray-400">Converta seus arquivos rapidamente e sem complicações.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+
+        <!-- Card 1: Foto para PDF -->
+        <div class="bg-secondary p-8 rounded-xl shadow-lg flex flex-col items-center transform hover:scale-105 transition duration-300">
+            <div class="text-primary text-4xl mb-4"><i class="fas fa-file-pdf"></i></div>
+            <h2 class="text-2xl font-bold mb-4">Foto → PDF</h2>
+            <p class="text-gray-400 text-sm mb-6 text-center">Transforme suas imagens (JPG, PNG) em arquivos PDF.</p>
+
+            <form id="form-img-pdf" class="w-full">
+                <div class="drop-zone w-full h-32 rounded-lg flex flex-col items-center justify-center cursor-pointer mb-4 relative hover:border-primary" id="drop-zone-img">
+                    <input type="file" name="arquivo" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="input-img" required>
+                    <i class="fas fa-cloud-upload-alt text-2xl mb-2 text-gray-500"></i>
+                    <p class="text-sm text-gray-400">Arraste ou clique para selecionar</p>
+                    <p class="text-xs text-primary mt-2 hidden" id="file-name-img"></p>
+                </div>
+                <button type="submit" class="w-full bg-primary text-dark font-bold py-3 rounded-lg hover:bg-hover transition duration-300 flex justify-center items-center shadow-md">
+                    <span id="btn-text-img">Gerar PDF</span>
+                    <i class="fas fa-spinner fa-spin ml-2 hidden" id="spinner-img"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Card 2: PDF para Imagem -->
+        <div class="bg-secondary p-8 rounded-xl shadow-lg flex flex-col items-center transform hover:scale-105 transition duration-300">
+            <div class="text-primary text-4xl mb-4"><i class="fas fa-image"></i></div>
+            <h2 class="text-2xl font-bold mb-4">PDF → Foto</h2>
+            <p class="text-gray-400 text-sm mb-6 text-center">Extraia a primeira página do seu PDF como imagem.</p>
+
+            <form id="form-pdf-img" class="w-full">
+                <div class="drop-zone w-full h-32 rounded-lg flex flex-col items-center justify-center cursor-pointer mb-4 relative hover:border-primary" id="drop-zone-pdf">
+                    <input type="file" name="arquivo" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="input-pdf" required>
+                    <i class="fas fa-cloud-upload-alt text-2xl mb-2 text-gray-500"></i>
+                    <p class="text-sm text-gray-400">Arraste ou clique para selecionar</p>
+                    <p class="text-xs text-primary mt-2 hidden" id="file-name-pdf"></p>
+                </div>
+                <button type="submit" class="w-full bg-primary text-dark font-bold py-3 rounded-lg hover:bg-hover transition duration-300 flex justify-center items-center shadow-md">
+                    <span id="btn-text-pdf">Extrair Foto</span>
+                    <i class="fas fa-spinner fa-spin ml-2 hidden" id="spinner-pdf"></i>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 transition-transform duration-300 hidden flex items-center gap-2">
+        <i class="fas fa-info-circle"></i>
+        <span id="toast-message">Erro ao processar!</span>
+    </div>
+
+    <script>
+        // Helper to handle drag and drop visual feedback
+        function setupDropZone(dropZoneId, inputId, fileNameId) {
+            const dropZone = document.getElementById(dropZoneId);
+            const input = document.getElementById(inputId);
+            const fileNameDisplay = document.getElementById(fileNameId);
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) {
+                    fileNameDisplay.textContent = input.files[0].name;
+                    fileNameDisplay.classList.remove('hidden');
+                }
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                 const dt = e.dataTransfer;
+                 const files = dt.files;
+                 input.files = files;
+                 if (input.files.length > 0) {
+                    fileNameDisplay.textContent = input.files[0].name;
+                    fileNameDisplay.classList.remove('hidden');
+                }
+            });
+        }
+
+        setupDropZone('drop-zone-img', 'input-img', 'file-name-img');
+        setupDropZone('drop-zone-pdf', 'input-pdf', 'file-name-pdf');
+
+        // Helper to handle form submission
+        function handleFormSubmit(formId, endpoint, btnTextId, spinnerId, downloadName) {
+            const form = document.getElementById(formId);
+            const btnText = document.getElementById(btnTextId);
+            const originalText = btnText.textContent; // Capture original text here
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                const fileInput = form.querySelector('input[type="file"]');
+
+                if (fileInput.files.length === 0) {
+                    showToast("Por favor, selecione um arquivo.", "bg-yellow-500");
+                    return;
+                }
+
+                const spinner = document.getElementById(spinnerId);
+                const submitBtn = form.querySelector('button[type="submit"]');
+
+                // Loading state
+                btnText.textContent = "Processando...";
+                spinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Erro no servidor');
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    // Try to get filename from content-disposition
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = downloadName;
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                        if (filenameMatch && filenameMatch.length === 2)
+                            filename = filenameMatch[1];
+                    }
+                    a.download = filename;
+
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+
+                    showToast("Sucesso! Download iniciado.", "bg-green-500");
+
+                } catch (error) {
+                    showToast(error.message, "bg-red-500");
+                } finally {
+                    btnText.textContent = originalText;
+                    spinner.classList.add('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            });
+        }
+
+        handleFormSubmit('form-img-pdf', '/converter-para-pdf', 'btn-text-img', 'spinner-img', 'convertido.pdf');
+        handleFormSubmit('form-pdf-img', '/converter-para-imagem', 'btn-text-pdf', 'spinner-pdf', 'pagina_1.jpg');
+
+        function showToast(message, bgColor) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+            // Reset classes then add new ones
+            toast.className = `fixed bottom-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50 flex items-center gap-2 ${bgColor}`;
+
+            // Show
+            toast.classList.remove('translate-y-20', 'hidden');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-20');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
