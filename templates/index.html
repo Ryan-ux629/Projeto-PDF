@@ -34,6 +34,15 @@
             border-color: #00ff88;
             background-color: rgba(0, 255, 136, 0.1);
         }
+        input[type="text"] {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+        }
+        input[type="text"]:focus {
+            border-color: #00ff88;
+            outline: none;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -58,6 +67,13 @@
                     <p class="text-sm text-gray-400">Arraste ou clique para selecionar</p>
                     <p class="text-xs text-primary mt-2 hidden" id="file-name-img"></p>
                 </div>
+
+                <!-- Input para nome do arquivo -->
+                <div class="mb-4 w-full">
+                    <label class="block text-gray-400 text-sm mb-2 text-left" for="filename-img">Nome do arquivo (opcional):</label>
+                    <input type="text" name="nome_arquivo" id="filename-img" placeholder="Ex: meu_documento" class="w-full px-4 py-2 rounded-lg">
+                </div>
+
                 <button type="submit" class="w-full bg-primary text-dark font-bold py-3 rounded-lg hover:bg-hover transition duration-300 flex justify-center items-center shadow-md">
                     <span id="btn-text-img">Gerar PDF</span>
                     <i class="fas fa-spinner fa-spin ml-2 hidden" id="spinner-img"></i>
@@ -78,6 +94,13 @@
                     <p class="text-sm text-gray-400">Arraste ou clique para selecionar</p>
                     <p class="text-xs text-primary mt-2 hidden" id="file-name-pdf"></p>
                 </div>
+
+                <!-- Input para nome do arquivo -->
+                <div class="mb-4 w-full">
+                    <label class="block text-gray-400 text-sm mb-2 text-left" for="filename-pdf">Nome do arquivo (opcional):</label>
+                    <input type="text" name="nome_arquivo" id="filename-pdf" placeholder="Ex: minha_imagem" class="w-full px-4 py-2 rounded-lg">
+                </div>
+
                 <button type="submit" class="w-full bg-primary text-dark font-bold py-3 rounded-lg hover:bg-hover transition duration-300 flex justify-center items-center shadow-md">
                     <span id="btn-text-pdf">Extrair Foto</span>
                     <i class="fas fa-spinner fa-spin ml-2 hidden" id="spinner-pdf"></i>
@@ -139,7 +162,7 @@
         setupDropZone('drop-zone-pdf', 'input-pdf', 'file-name-pdf');
 
         // Helper to handle form submission
-        function handleFormSubmit(formId, endpoint, btnTextId, spinnerId, downloadName) {
+        function handleFormSubmit(formId, endpoint, btnTextId, spinnerId, defaultName) {
             const form = document.getElementById(formId);
             const btnText = document.getElementById(btnTextId);
             const originalText = btnText.textContent; // Capture original text here
@@ -182,7 +205,7 @@
 
                     // Try to get filename from content-disposition
                     const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = downloadName;
+                    let filename = defaultName;
                     if (contentDisposition) {
                         const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
                         if (filenameMatch && filenameMatch.length === 2)
