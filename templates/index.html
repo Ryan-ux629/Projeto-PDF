@@ -207,10 +207,25 @@
                     const contentDisposition = response.headers.get('Content-Disposition');
                     let filename = defaultName;
                     if (contentDisposition) {
-                        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                        if (filenameMatch && filenameMatch.length === 2)
-                            filename = filenameMatch[1];
+                        // Try filename* first (UTF-8)
+                        let match = contentDisposition.match(/filename\*=utf-8''([\w%\-\.]+)(?:;|$)/i);
+                        if (match && match[1]) {
+                             filename = decodeURIComponent(match[1]);
+                        } else {
+                             // Try quoted filename
+                             match = contentDisposition.match(/filename="([^"]+)"/i);
+                             if (match && match[1]) {
+                                 filename = match[1];
+                             } else {
+                                 // Try unquoted filename
+                                 match = contentDisposition.match(/filename=([^;]+)(?:;|$)/i);
+                                 if (match && match[1]) {
+                                     filename = match[1].trim();
+                                 }
+                             }
+                        }
                     }
+                    console.log("Download filename:", filename);
                     a.download = filename;
 
                     document.body.appendChild(a);

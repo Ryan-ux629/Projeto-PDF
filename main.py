@@ -18,6 +18,16 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Configuração de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Em produção, especifique os domínios permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
+
 # Constantes de Segurança
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"]
