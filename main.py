@@ -10,7 +10,7 @@ import tempfile
 import logging
 import re
 import magic
-from typing import Optional
+from typing import Optional, List
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
@@ -120,30 +120,39 @@ async def home(request: Request):
 @app.post("/converter-para-pdf")
 async def converter_para_pdf(
     background_tasks: BackgroundTasks,
-    arquivo: UploadFile = File(...),
+    arquivo: List[UploadFile] = File(...),
     nome_arquivo: Optional[str] = Form(None)
 ):
-    tmp_input_path = None
+    tmp_input_paths = []
     tmp_output_path = None
 
     try:
-        # Salva o arquivo temporariamente verificando o tamanho
-        tmp_input_path = await save_upload_file_tmp(arquivo)
+        if not arquivo:
+             raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-        # Agenda limpeza do arquivo de entrada
-        background_tasks.add_task(cleanup_file, tmp_input_path)
+        # Processa cada imagem
+        for file in arquivo:
+            # Validação simples
+            if not file.content_type.startswith("image/"):
+                raise HTTPException(status_code=400, detail=f"O arquivo {file.filename} deve ser uma imagem válida.")
 
-        # Valida o tipo do arquivo
-        validate_file_type(tmp_input_path, ALLOWED_IMAGE_TYPES)
+            # Salva temporariamente
+            tmp_path = await save_upload_file_tmp(file)
+            tmp_input_paths.append(tmp_path)
+
+            # Agenda limpeza (caso ocorra erro antes do final)
+            background_tasks.add_task(cleanup_file, tmp_path)
+
+            # Valida tipo
+            validate_file_type(tmp_path, ALLOWED_IMAGE_TYPES)
 
         # Converte para PDF
         try:
-            with open(tmp_input_path, "rb") as f:
-                pdf_bytes = img2pdf.convert(f)
+            # img2pdf aceita lista de caminhos de arquivos
+            pdf_bytes = img2pdf.convert(tmp_input_paths)
         except Exception as e:
-             # Se img2pdf falhar, pode ser um arquivo corrompido ou malicioso
             logger.warning(f"img2pdf falhou: {e}")
-            raise HTTPException(status_code=400, detail="Arquivo de imagem inválido ou corrompido.")
+            raise HTTPException(status_code=400, detail="Erro ao converter imagens. Verifique se são válidas.")
 
         # Cria arquivo de saída
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_output_file:
@@ -163,13 +172,15 @@ async def converter_para_pdf(
         )
 
     except HTTPException:
-        # Repassa exceções HTTP conhecidas
-        if tmp_input_path: cleanup_file(tmp_input_path) # Limpeza imediata em caso de erro
+        # Em caso de erro HTTP, limpa os arquivos criados até agora
+        for path in tmp_input_paths:
+            cleanup_file(path)
         if tmp_output_path: cleanup_file(tmp_output_path)
         raise
     except Exception as e:
         logger.error(f"Erro inesperado na conversão para PDF: {e}")
-        if tmp_input_path: cleanup_file(tmp_input_path)
+        for path in tmp_input_paths:
+            cleanup_file(path)
         if tmp_output_path: cleanup_file(tmp_output_path)
         raise HTTPException(status_code=500, detail="Erro interno ao processar a solicitação.")
 

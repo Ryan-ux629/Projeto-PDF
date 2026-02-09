@@ -62,9 +62,9 @@
 
             <form id="form-img-pdf" class="w-full">
                 <div class="drop-zone w-full h-32 rounded-lg flex flex-col items-center justify-center cursor-pointer mb-4 relative hover:border-primary" id="drop-zone-img">
-                    <input type="file" name="arquivo" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="input-img" required>
+                    <input type="file" name="arquivo" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="input-img" required multiple>
                     <i class="fas fa-cloud-upload-alt text-2xl mb-2 text-gray-500"></i>
-                    <p class="text-sm text-gray-400">Arraste ou clique para selecionar</p>
+                    <p class="text-sm text-gray-400">Arraste ou clique para selecionar (multiplos permitidos)</p>
                     <p class="text-xs text-primary mt-2 hidden" id="file-name-img"></p>
                 </div>
 
@@ -142,7 +142,11 @@
 
             input.addEventListener('change', () => {
                 if (input.files.length > 0) {
-                    fileNameDisplay.textContent = input.files[0].name;
+                    if (input.files.length === 1) {
+                        fileNameDisplay.textContent = input.files[0].name;
+                    } else {
+                        fileNameDisplay.textContent = `${input.files.length} arquivos selecionados`;
+                    }
                     fileNameDisplay.classList.remove('hidden');
                 }
             });
@@ -152,7 +156,11 @@
                  const files = dt.files;
                  input.files = files;
                  if (input.files.length > 0) {
-                    fileNameDisplay.textContent = input.files[0].name;
+                    if (input.files.length === 1) {
+                        fileNameDisplay.textContent = input.files[0].name;
+                    } else {
+                        fileNameDisplay.textContent = `${input.files.length} arquivos selecionados`;
+                    }
                     fileNameDisplay.classList.remove('hidden');
                 }
             });
