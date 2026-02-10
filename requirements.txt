@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+img2pdf
+pdf2image
+pillow
+jinja2
+python-magic
